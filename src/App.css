@@ -1,0 +1,142 @@
+/* Font Imports */
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@300;500;700&family=Noto+Serif+JP:wght@300;500;700;900&display=swap');
+
+/* Base Theme Colors */
+:root {
+  --bg-color: #f8f5f2;
+  --text-color: #3a3a3a;
+  --button-bg: #d9cbb7;
+  --button-hover-bg: #c8b9a2;
+  --heading-color: #5c4b3b;
+  --border-radius: 8px;
+}
+
+/* Global Reset and Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Serif JP', serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  line-height: 1.6;
+  padding: 1rem;
+  display: flex;
+  justify-content: center;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Crimson Pro', serif;
+  color: var(--heading-color);
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.6rem;
+}
+
+/* Buttons */
+button {
+  width: 100%;
+  font-family: 'Noto Serif JP', serif;
+  background-color: var(--button-bg);
+  color: var(--text-color);
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    transform 0.2s ease;
+}
+
+button:hover {
+  background-color: var(--button-hover-bg);
+  transform: scale(1.02);
+}
+
+button.secondary {
+  width: 100%;
+  font-family: 'Noto Serif JP', serif;
+  background-color: transparent;
+  color: var(--text-color);
+  padding: 0.6rem 1.2rem;
+  border: 2px solid var(--button-bg);
+  border-radius: var(--border-radius);
+  font-size: 1rem;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    transform 0.2s ease;
+}
+
+button.secondary:hover {
+  background-color: var(--button-bg);
+  color: white;
+  transform: scale(1.02);
+}
+
+table {
+  margin: 0 auto 1rem auto;
+  background-color: #fff;
+}
+
+input {
+  border: none;
+  height: 100%;
+  width: 100%;
+  background-color: transparent;
+  text-align: center;
+  color: var(--text-color);
+  font-weight: 900;
+}
+
+input:focus {
+  outline: none;
+}
+
+td {
+  border: solid 1px #000;
+  height: 50px;
+  width: 50px;
+}
+
+td:hover {
+  background-color: #f0f4f7;
+}
+
+tr:nth-child(3n) td {
+  border-bottom: 3px solid black;
+}
+
+td:nth-child(3n) {
+  border-right: 3px solid black;
+}
+
+tr:first-child td {
+  border-top: 3px solid black;
+}
+
+td:first-child {
+  border-left: 3px solid black;
+}
