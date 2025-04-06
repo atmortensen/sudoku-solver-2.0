@@ -1,17 +1,16 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import './App.css';
 
-const NUMBERS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 const PRESET_BOARD = [
-  ['', '', '', '1', '', '2', '', '', ''],
-  ['', '6', '', '', '', '', '', '7', ''],
-  ['', '', '8', '', '', '', '9', '', ''],
-  ['4', '', '', '', '', '', '', '', '3'],
-  ['', '5', '', '', '', '7', '', '', ''],
-  ['2', '', '', '', '8', '', '', '', '1'],
-  ['', '', '9', '', '', '', '8', '', '5'],
-  ['', '7', '', '', '', '', '', '6', ''],
-  ['', '', '', '3', '', '4', '', '', ''],
+  ['', '', '', 1, '', 2, '', '', ''],
+  ['', 6, '', '', '', '', '', 7, ''],
+  ['', '', 8, '', '', '', 9, '', ''],
+  [4, '', '', '', '', '', '', '', 3],
+  ['', 5, '', '', '', 7, '', '', ''],
+  [2, '', '', '', 8, '', '', '', 1],
+  ['', '', 9, '', '', '', 8, '', 5],
+  ['', 7, '', '', '', '', '', 6, ''],
+  ['', '', '', 3, '', 4, '', '', ''],
 ];
 
 function App() {
@@ -20,7 +19,119 @@ function App() {
   const [solveSteps, setSolveSteps] = useState(0);
   const [solveTime, setSolveTime] = useState(0);
 
-  const inputRefs = useRef([]);
+  const validBoard = (board) => {
+    const filterEmpty = (arr) => arr.filter((el) => el !== '');
+    const hasDuplicates = (arr) => new Set(arr).size !== arr.length;
+
+    for (let i = 0; i < 9; i++) {
+      //check rows
+
+      if (hasDuplicates(filterEmpty(board[i]))) {
+        return false;
+      }
+      //check columns
+      const col = board.map((row) => row[i]);
+      if (hasDuplicates(filterEmpty(col))) {
+        return false;
+      }
+      //check boxes
+      const box = board
+        .slice(Math.floor(i / 3) * 3, Math.floor(i / 3) * 3 + 3)
+        .flatMap((row) => row.slice(Math.floor(i % 3) * 3, Math.floor(i % 3) * 3 + 3));
+      if (hasDuplicates(filterEmpty(box))) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const solve = () => {
+    const startTime = performance.now();
+    const workingBoard = structuredClone(board);
+    const originalBoard = structuredClone(board);
+
+    if (!validBoard(board)) {
+      setLoading(false);
+      return alert('Invalid Sudoku. Duplicates found in rows, columns, or boxes.');
+    }
+
+    let row = 0;
+    let col = 0;
+    let steps = 0;
+
+    const moveForward = () => {
+      do {
+        if (col === 8) {
+          col = 0;
+          row++;
+        } else {
+          col++;
+        }
+      } while (originalBoard[row]?.[col]);
+    };
+
+    const moveBack = () => {
+      do {
+        if (col === 0) {
+          col = 8;
+          row--;
+        } else {
+          col--;
+        }
+      } while (originalBoard[row][col]);
+    };
+
+    const findNextValidNumber = (row, col) => {
+      const rowValues = workingBoard[row];
+      const colValues = workingBoard.map((r) => r[col]);
+      const boxValues = workingBoard
+        .slice(Math.floor(row / 3) * 3, Math.floor(row / 3) * 3 + 3)
+        .flatMap((r) => r.slice(Math.floor(col / 3) * 3, Math.floor(col / 3) * 3 + 3));
+
+      const startingValue = workingBoard[row][col] || 1;
+      for (let i = startingValue; i <= 9; i++) {
+        if (!rowValues.includes(i) && !colValues.includes(i) && !boxValues.includes(i)) {
+          return i;
+        }
+      }
+    };
+
+    // Move to the first empty cell
+    if (originalBoard[row][col]) {
+      moveForward();
+    }
+
+    while (row < 9) {
+      steps++;
+
+      const nextValidNumber = findNextValidNumber(row, col);
+
+      if (nextValidNumber) {
+        workingBoard[row][col] = nextValidNumber;
+        moveForward();
+      } else {
+        workingBoard[row][col] = '';
+        moveBack();
+      }
+    }
+
+    const endTime = performance.now();
+    setSolveTime(Math.round(endTime - startTime));
+    setSolveSteps(steps);
+    setBoard(workingBoard);
+    setLoading(false);
+  };
+
+  const updateCell = (row, col, val) => {
+    val = !val || val === 'Backspace' ? '' : Number(val);
+    // Only allow numbers 1-9
+    const validValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, ''];
+    if (!validValues.includes(val)) return;
+
+    const newBoard = board.map((r, i) => (i === row ? r.map((c, j) => (j === col ? val : c)) : r));
+    setBoard(newBoard);
+  };
 
   const clearBoard = () => {
     setBoard((prevBoard) => prevBoard.map((row) => row.map(() => '')));
@@ -29,133 +140,10 @@ function App() {
     setLoading(false);
   };
 
-  const updateCell = (row, col, val) => {
-    // Only allow numbers 1-9
-    if (!NUMBERS.concat('').includes(val)) return;
-
-    const newBoard = board.map((r, i) => (i === row ? r.map((c, j) => (j === col ? val : c)) : r));
-    setBoard(newBoard);
-  };
-
-  const handleKeyDown = (e, rowIndex, index) => {
-    if (e.key === 'Backspace' && e.target.value === '') {
-      const prevInput = inputRefs.current[rowIndex * 9 + index - 1];
-      if (prevInput) {
-        prevInput.focus();
-      }
-    }
-  };
-
-  const solve = () => {
-    const startTime = performance.now();
-    const workingBoard = structuredClone(board);
-    const originalBoard = structuredClone(board);
-    let row = 0;
-    let col = 0;
-    let steps = 0;
-
-    const updateCell = (row, col, value) => {
-      workingBoard[row][col] = value;
-    };
-
-    const moveForward = () => {
-      if (col === 8) {
-        col = 0;
-        row++;
-      } else {
-        col++;
-      }
-      // Skip filled cells
-      if (originalBoard[row]?.[col]) {
-        moveForward();
-      }
-    };
-
-    const moveBack = () => {
-      if (col === 0) {
-        col = 8;
-        row--;
-      } else {
-        col--;
-      }
-      // Skip filled cells
-      if (originalBoard[row]?.[col]) {
-        moveBack();
-      }
-      // If the last number is reached, reset it and move back
-      if (workingBoard[row] && workingBoard[row][col] === NUMBERS[NUMBERS.length - 1]) {
-        updateCell(row, col, '');
-        moveBack();
-      }
-    };
-
-    const hasDuplicates = (arr) => {
-      const seen = new Set();
-      for (let i = 0; i < arr.length; i++) {
-        if (arr[i]) {
-          if (seen.has(arr[i])) {
-            return true;
-          }
-          seen.add(arr[i]);
-        }
-      }
-      return false;
-    };
-
-    const cellIsValid = (row, col) => {
-      const rowValues = workingBoard[row];
-      const colValues = workingBoard.map((r) => r[col]);
-      const boxValues = workingBoard
-        .slice(Math.floor(row / 3) * 3, Math.floor(row / 3) * 3 + 3)
-        .flatMap((r) => r.slice(Math.floor(col / 3) * 3, Math.floor(col / 3) * 3 + 3));
-
-      return !hasDuplicates(rowValues) && !hasDuplicates(colValues) && !hasDuplicates(boxValues);
-    };
-
-    // Check if each filled cell is valid
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (workingBoard[r][c] && !cellIsValid(r, c)) {
-          return alert('Invalid Sudoku');
-        }
-      }
-    }
-
-    // Find the first empty cell
-    if (originalBoard[row][col]) {
-      moveForward();
-    }
-
-    while (row < 9) {
-      steps++;
-
-      // If the cell is empty, fill it with the first number
-      if (workingBoard[row][col] === '') {
-        updateCell(row, col, NUMBERS[0]);
-      }
-
-      // Check if the cell is valid
-      if (!cellIsValid(row, col)) {
-        const nextNumber = NUMBERS[NUMBERS.indexOf(workingBoard[row][col]) + 1];
-        if (nextNumber) {
-          // Check if the next number is valid
-          updateCell(row, col, nextNumber);
-          continue;
-        } else {
-          // If none of the numbers work, reset the cell and move back
-          updateCell(row, col, '');
-          moveBack();
-          updateCell(row, col, NUMBERS[NUMBERS.indexOf(workingBoard[row][col]) + 1]);
-          continue;
-        }
-      }
-      moveForward();
-    }
-
-    const endTime = performance.now();
-    setSolveTime(Math.round(endTime - startTime));
-    setSolveSteps(steps);
-    setBoard(workingBoard);
+  const resetBoard = () => {
+    setBoard(PRESET_BOARD);
+    setSolveSteps(0);
+    setSolveTime(0);
     setLoading(false);
   };
 
@@ -172,10 +160,7 @@ function App() {
                   <input
                     type="text"
                     value={cell}
-                    maxLength={1}
-                    ref={(el) => (inputRefs.current[rowIndex * 9 + columnIndex] = el)}
-                    onChange={(e) => updateCell(rowIndex, columnIndex, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(e, rowIndex, columnIndex)}
+                    onKeyDown={(e) => updateCell(rowIndex, columnIndex, e.key)}
                   />
                 </td>
               ))}
@@ -187,7 +172,7 @@ function App() {
       <button
         onClick={() => {
           setLoading(true);
-          // Necessary to allow the UI to update before starting the solve
+          // Necessary to allow the loading state to update before starting
           setTimeout(solve, 0);
         }}
         disabled={loading}
@@ -195,18 +180,10 @@ function App() {
         {loading ? 'Loading...' : 'Solve'}
       </button>
       <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-        <button className="secondary" onClick={clearBoard}>
+        <button className="secondary" onClick={clearBoard} disabled={loading}>
           Clear
         </button>
-        <button
-          className="secondary"
-          onClick={() => {
-            setBoard(PRESET_BOARD);
-            setSolveSteps(0);
-            setSolveTime(0);
-            setLoading(false);
-          }}
-        >
+        <button className="secondary" onClick={resetBoard} disabled={loading}>
           Reset
         </button>
       </div>
