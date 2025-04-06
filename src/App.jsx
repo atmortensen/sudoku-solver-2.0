@@ -1,23 +1,13 @@
 import { useState } from 'react';
 import './App.css';
-
-const PRESET_BOARD = [
-  ['', '', '', 1, '', 2, '', '', ''],
-  ['', 6, '', '', '', '', '', 7, ''],
-  ['', '', 8, '', '', '', 9, '', ''],
-  [4, '', '', '', '', '', '', '', 3],
-  ['', 5, '', '', '', 7, '', '', ''],
-  [2, '', '', '', 8, '', '', '', 1],
-  ['', '', 9, '', '', '', 8, '', 5],
-  ['', 7, '', '', '', '', '', 6, ''],
-  ['', '', '', 3, '', 4, '', '', ''],
-];
+import { EASY_BOARD, HARD_BOARD, EXTREME_BOARD } from './preset-puzzles';
 
 function App() {
-  const [board, setBoard] = useState(PRESET_BOARD);
+  const [board, setBoard] = useState(EXTREME_BOARD);
   const [loading, setLoading] = useState(false);
   const [solveSteps, setSolveSteps] = useState(0);
   const [solveTime, setSolveTime] = useState(0);
+  const [showDifficultyMenu, setShowDifficultyMenu] = useState(false);
 
   const validBoard = (board) => {
     const filterEmpty = (arr) => arr.filter((el) => el !== '');
@@ -25,7 +15,6 @@ function App() {
 
     for (let i = 0; i < 9; i++) {
       //check rows
-
       if (hasDuplicates(filterEmpty(board[i]))) {
         return false;
       }
@@ -58,7 +47,7 @@ function App() {
 
     let row = 0;
     let col = 0;
-    let steps = 0;
+    let steps = [];
 
     const moveForward = () => {
       do {
@@ -103,31 +92,31 @@ function App() {
     }
 
     while (row < 9) {
-      steps++;
-
       const nextValidNumber = findNextValidNumber(row, col);
 
       if (nextValidNumber) {
         workingBoard[row][col] = nextValidNumber;
+        steps.push({ row, col, val: nextValidNumber });
         moveForward();
       } else {
         workingBoard[row][col] = '';
+        steps.push({ row, col, val: '' });
         moveBack();
       }
     }
 
     const endTime = performance.now();
     setSolveTime(Math.round(endTime - startTime));
-    setSolveSteps(steps);
-    setBoard(workingBoard);
-    setLoading(false);
+    setSolveSteps(steps.length);
+
+    animateSolve(steps);
   };
 
   const updateCell = (row, col, val) => {
-    val = !val || val === 'Backspace' ? '' : Number(val);
+    val = !val || val === 'Backspace' || val === 'Delete' ? '' : Number(val);
     // Only allow numbers 1-9
-    const validValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, ''];
-    if (!validValues.includes(val)) return;
+    const validValues = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, '']);
+    if (!validValues.has(val)) return;
 
     const newBoard = board.map((r, i) => (i === row ? r.map((c, j) => (j === col ? val : c)) : r));
     setBoard(newBoard);
@@ -140,16 +129,45 @@ function App() {
     setLoading(false);
   };
 
-  const resetBoard = () => {
-    setBoard(PRESET_BOARD);
+  const resetBoard = (sampleBoard) => {
+    setBoard(sampleBoard);
     setSolveSteps(0);
     setSolveTime(0);
+    setLoading(false);
+    setShowDifficultyMenu(false);
+  };
+
+  const animateSolve = async (steps) => {
+    const virtualBoard = structuredClone(board);
+    const delay = 4; // Minimum allowed by browser
+    const maxAnimationDuration = 10000;
+    const maxFrames = Math.floor(maxAnimationDuration / delay);
+    const skipEveryXFrames = steps.length > maxFrames ? Math.floor(steps.length / maxFrames) : 1;
+
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (let i = 0; i < steps.length; i++) {
+      const { row, col, val } = steps[i];
+      virtualBoard[row][col] = val;
+      if (i % skipEveryXFrames === 0) {
+        setBoard(structuredClone(virtualBoard));
+        await pause(delay);
+      }
+    }
+    setBoard(virtualBoard); // Ensure the final state is set
     setLoading(false);
   };
 
   return (
-    <>
+    <div className="wrapper">
       <h1>Sudoku Solver</h1>
+      <p>
+        This React app is an interactive Sudoku solver that uses a backtracking algorithm to find a
+        solution, then animates the solving process step-by-step to visualize how the algorithm
+        worked. The preset puzzle is the most difficult one I was able to find, making it a great
+        test of both logic and performance. It's a fully functional demo of algorithmic
+        problem-solving and state management in React.
+      </p>
 
       <table cellSpacing={0} cellPadding={0}>
         <tbody>
@@ -160,6 +178,7 @@ function App() {
                   <input
                     type="text"
                     value={cell}
+                    onChange={() => {}} // Getting the react warning off my back
                     onKeyDown={(e) => updateCell(rowIndex, columnIndex, e.key)}
                   />
                 </td>
@@ -179,12 +198,25 @@ function App() {
       >
         {loading ? 'Loading...' : 'Solve'}
       </button>
+
       <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-        <button className="secondary" onClick={clearBoard} disabled={loading}>
+        <button className="secondary" onClick={clearBoard} disabled={loading} style={{ flex: 1 }}>
           Clear
         </button>
-        <button className="secondary" onClick={resetBoard} disabled={loading}>
-          Reset
+        <button
+          className="secondary"
+          onClick={() => setShowDifficultyMenu(!showDifficultyMenu)}
+          disabled={loading}
+          style={{ flex: 1, position: 'relative' }}
+        >
+          Sample Puzzle
+          {showDifficultyMenu && (
+            <div className="dropdown-content">
+              <button onClick={() => resetBoard(EASY_BOARD)}>Easy</button>
+              <button onClick={() => resetBoard(HARD_BOARD)}>Hard</button>
+              <button onClick={() => resetBoard(EXTREME_BOARD)}>Extreme</button>
+            </div>
+          )}
         </button>
       </div>
 
@@ -192,7 +224,7 @@ function App() {
         * Solved in <strong>{solveTime.toLocaleString()}ms</strong> and{' '}
         <strong>{solveSteps.toLocaleString()} steps</strong>
       </p>
-    </>
+    </div>
   );
 }
 
