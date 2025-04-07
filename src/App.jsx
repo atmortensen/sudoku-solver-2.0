@@ -1,9 +1,20 @@
 import { useState } from 'react';
 import './App.css';
 import { EASY_BOARD, HARD_BOARD, EXTREME_BOARD } from './preset-puzzles';
+import GitHubIcon from './components/GitHubIcon';
 
 function App() {
-  const [board, setBoard] = useState(EXTREME_BOARD);
+  const [board, setBoard] = useState([
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', '', ''],
+  ]);
   const [loading, setLoading] = useState(false);
   const [solveSteps, setSolveSteps] = useState(0);
   const [solveTime, setSolveTime] = useState(0);
@@ -160,6 +171,7 @@ function App() {
 
   return (
     <div className="wrapper">
+      <GitHubIcon />
       <h1>Sudoku Solver</h1>
       <p>
         This React app is an interactive Sudoku solver that uses a backtracking algorithm to find a
