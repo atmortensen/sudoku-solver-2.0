@@ -176,8 +176,8 @@ function App() {
       <p>
         This React app is an interactive Sudoku solver that uses a backtracking algorithm to find a
         solution, then animates the solving process step-by-step to visualize how the algorithm
-        worked. The preset puzzle is the most difficult one I was able to find, making it a great
-        test of both logic and performance. It's a fully functional demo of algorithmic
+        worked. The extreme preset puzzle is the most difficult one I was able to find, making it a
+        great test of both logic and performance. It's a fully functional demo of algorithmic
         problem-solving and state management in React.
       </p>
 
